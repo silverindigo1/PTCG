@@ -52,6 +52,12 @@ class Repository:
         async with self.pool.acquire() as conn:
             return await conn.fetch(sql, *args)
 
+    async def _execute(self, sql: str, *args: Any) -> None:
+        if self.pool is None:
+            return
+        async with self.pool.acquire() as conn:
+            await conn.execute(sql, *args)
+
     # -------------------------------------------------------------- identity
     async def candidate_variants(
         self,
@@ -142,6 +148,35 @@ class Repository:
                 list(best.penalties) if best else [],
                 [f for c in result.rejected for f in c.gate_failures][:20],
             )
+
+    # --------------------------------------------------------- averages ----
+    async def record_market_average(self, variant_id: str, seen: dict, bench) -> None:
+        """Persist a published average and the verdict of its checks.
+
+        Refused observations are stored too, with their reasons: knowing that
+        a card's figures were rejected, and why, is evidence in its own right.
+        """
+        obs = bench.observation
+        if obs is None:
+            return
+        await self._execute(
+            """
+            INSERT INTO market_average_observation
+              (variant_id, provider, via, external_card_id, product_id, finish,
+               currency, provider_updated_at, known_at, avg, low, trend, avg1,
+               avg7, avg30, market, language, source_url, raw_hash, accepted,
+               value_used, refusal_reasons)
+            VALUES ($1::uuid,$2,$3,$4,$5,$6,$7::currency_code,$8,$9,$10,$11,$12,
+                    $13,$14,$15,$16,$17::card_language,$18,$19,$20,$21,$22)
+            ON CONFLICT (variant_id, provider, finish, provider_updated_at) DO NOTHING
+            """,
+            variant_id, obs.provider, obs.via, seen.get("card_id"), obs.product_id,
+            obs.finish, obs.currency.value, obs.provider_updated_at, obs.known_at,
+            obs.avg, obs.low, obs.trend, obs.avg1, obs.avg7, obs.avg30, obs.market,
+            obs.language.value if obs.language else None, obs.source_url, obs.raw_hash,
+            bench.accepted, bench.value.amount if bench.value else None,
+            None if bench.accepted else list(bench.reasons),
+        )
 
     # ---------------------------------------------------------------- market
     async def sales_for(

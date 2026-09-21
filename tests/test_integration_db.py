@@ -67,6 +67,7 @@ from pokearb_core.types import (  # noqa: E402
     Currency,
     Grader,
     Language,
+    Printing,
     Scenario,
 )
 
@@ -86,6 +87,7 @@ def store():
 
 
 _TABLES = (
+    "market_average_observation, "
     "alert, opportunity_snapshot, opportunity, fair_value_input, "
     "fair_value_snapshot, listing_observation, listing, sale, import_batch, "
     "cycle_stage, cycle, raw_record"
@@ -469,6 +471,13 @@ def test_synthetic_rows_cannot_be_attributed_to_a_production_source(clean, varia
 
 # ---------------------------------------------------- database to verdict --
 
+class _OfflinePricing:
+    """Integration tests exercise the database, not the network."""
+
+    def observe(self, *a, **k):
+        raise RuntimeError("pricing is offline in the integration tests")
+
+
 def _quick_check(variant_id: str, **overrides):
     """Run Quick Check the way the endpoint does, against the real database."""
     deps = api("deps")
@@ -491,7 +500,7 @@ def _quick_check(variant_id: str, **overrides):
     async def run():
         repo = Repository(DSN)
         await repo.connect()
-        ctx = deps.Context(repo)
+        ctx = deps.Context(repo, pricing=_OfflinePricing())
         match = await ctx.resolve_identity(req)
         if match.best is None or match.outcome.value != "auto":
             return req, match, None
@@ -537,7 +546,7 @@ def test_quick_check_reports_insufficient_data_rather_than_guessing(clean, varia
     async def run():
         repo = Repository(DSN)
         await repo.connect()
-        ctx = deps.Context(repo)
+        ctx = deps.Context(repo, pricing=_OfflinePricing())
         match = await ctx.resolve_identity(req)
         if match.best is None:
             return None
@@ -554,7 +563,7 @@ def test_quick_check_reports_insufficient_data_rather_than_guessing(clean, varia
 def test_quick_check_refuses_an_unknown_scenario(clean, variant, fx):
     deps = api("deps")
     schemas = api("schemas")
-    ctx = deps.Context(None)
+    ctx = deps.Context(None, pricing=_OfflinePricing())
     req = schemas.QuickCheckRequest(
         raw_title="x", price_jpy=Decimal("6500"), scenario="teleport",
     )
@@ -621,3 +630,47 @@ def test_a_material_price_drop_does_realert(clean, variant, fx):
     assert not any("new completed sales" in r for r in reasons), (
         "no sale was added, so the reason list must not invent new sales"
     )
+
+
+
+# ------------------------------------------------------- published averages --
+
+def test_published_average_is_stored_once_with_its_verdict(clean, variant):
+    """The Quick Check write path for averages, through real SQL."""
+    import json as _json
+
+    from pokearb_core.adapters.live import parse_tcgdex_cardmarket
+    from pokearb_core.valuation.benchmark import BenchmarkConfig, assess_market_average
+
+    payload = _json.loads(
+        (ROOT / "tests" / "fixtures" / "tcgdex" / "ja_cards_SV2a-173.json").read_text("utf-8")
+    )
+    now = datetime.now(timezone.utc)
+    obs, reasons = parse_tcgdex_cardmarket(
+        payload, printing=Printing.HOLO, variant_id=variant, known_at=now)
+    bench = assess_market_average(
+        obs, as_of=now, sibling_product_ids=["719467"], parser_reasons=reasons,
+        config=BenchmarkConfig(max_age_days=100000),
+    )
+    refused = assess_market_average(obs, as_of=now, sibling_product_ids=["719626"],
+                                    config=BenchmarkConfig(max_age_days=100000))
+    assert bench.accepted and refused.refused
+
+    async def run():
+        repo = Repository(DSN)
+        await repo.connect()
+        await repo.record_market_average(variant, {"card_id": "SV2a-173"}, bench)
+        await repo.record_market_average(variant, {"card_id": "SV2a-173"}, bench)
+
+    asyncio.run(run())
+    with clean.conn.cursor() as cur:
+        cur.execute(
+            "SELECT count(*) AS n, bool_and(accepted) AS ok, max(value_used) AS v, "
+            "max(product_id) AS p FROM market_average_observation WHERE variant_id=%s::uuid",
+            (variant,),
+        )
+        row = cur.fetchone()
+    assert row["n"] == 1, "re-checking the same published update adds no row"
+    assert row["ok"] is True
+    assert row["v"] == Decimal("28.2900")
+    assert row["p"] == "719626"

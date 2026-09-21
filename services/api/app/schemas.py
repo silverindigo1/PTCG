@@ -21,6 +21,11 @@ class Verdict(str, Enum):
     #: Deliberately separate from PASS. "I do not know" and "no" call for
     #: different behaviour when you are holding the card.
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    #: Valued from published market averages, not from counted sales. The
+    #: response carries a maximum buy price and whether the ask is inside it,
+    #: but never an opportunity call: the number of sales behind the averages
+    #: and the card's liquidity are both unknown.
+    INDICATIVE = "INDICATIVE"
 
 
 class QuickCheckRequest(BaseModel):
@@ -115,6 +120,17 @@ class QuickCheckResponse(BaseModel):
     condition_value_ladder: list[dict[str, Any]] = Field(
         default_factory=list,
         description="Value at each condition, with observed vs modelled stated per point.",
+    )
+    valuation_basis: str = Field(
+        "completed_sales",
+        description=(
+            "completed_sales, or cardmarket_average_via_tcgdex when no sales "
+            "benchmark exists and a published average passed its checks"
+        ),
+    )
+    market_average: Optional[dict[str, Any]] = Field(
+        None,
+        description="The published figures used, their product id, freshness and checks.",
     )
     recent_sales: list[dict[str, Any]] = Field(default_factory=list)
     european_supply: Traceable = Traceable(known=False)

@@ -34,6 +34,7 @@ __all__ = [
     "CardVariant",
     "Sale",
     "Listing",
+    "MarketAverage",
     "PopulationSnapshot",
     "ConditionDistribution",
     "FairValue",
@@ -371,6 +372,42 @@ class Listing:
     @property
     def dedupe_key(self) -> tuple[str, str]:
         return (self.source_id, self.external_id or self.listing_id)
+
+
+@dataclass(frozen=True, slots=True)
+class MarketAverage:
+    """A marketplace's own published price averages for one card.
+
+    Distinct from ``Sale`` on purpose, and never convertible into one. An
+    average says nothing about how many transactions produced it: a 30-day
+    average built from one sale looks exactly like one built from two hundred.
+    The valuation code therefore treats this as a different, weaker kind of
+    evidence with its own acceptance rules, see
+    ``pokearb_core.valuation.benchmark``.
+
+    Price fields are ``None`` when the provider did not publish a usable
+    figure. A published zero is also stored as ``None``: a Cardmarket average
+    of exactly zero means "no data", not "free".
+    """
+
+    variant_id: str
+    provider: str                  # "cardmarket"
+    via: str                       # "tcgdex": who relayed the provider's figures
+    product_id: Optional[str]      # the provider's own product id, for collision checks
+    finish: str                    # "base" or "reverse": which set of fields was read
+    currency: Currency
+    provider_updated_at: datetime  # when the provider last recomputed the figures
+    known_at: datetime             # when we fetched them; the look-ahead boundary
+    avg: Optional[Decimal] = None
+    low: Optional[Decimal] = None
+    trend: Optional[Decimal] = None
+    avg1: Optional[Decimal] = None
+    avg7: Optional[Decimal] = None
+    avg30: Optional[Decimal] = None
+    market: str = "EU"
+    language: Optional[Language] = None
+    source_url: Optional[str] = None
+    raw_hash: Optional[str] = None
 
 
 @dataclass(frozen=True, slots=True)

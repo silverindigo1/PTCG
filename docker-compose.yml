@@ -14,6 +14,7 @@ services:
       - ./migrations/versions/0001_initial.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
       - ./migrations/versions/0002_pipeline_and_provenance.sql:/docker-entrypoint-initdb.d/02_pipeline.sql:ro
       - ./migrations/versions/0003_manual_import_verification.sql:/docker-entrypoint-initdb.d/03_manual_import.sql:ro
+      - ./migrations/versions/0004_market_averages.sql:/docker-entrypoint-initdb.d/03b_market_averages.sql:ro
       - ./seed/sources.sql:/docker-entrypoint-initdb.d/04_sources.sql:ro
       - ./seed/policy.sql:/docker-entrypoint-initdb.d/05_policy.sql:ro
       - ./seed/condition_priors.sql:/docker-entrypoint-initdb.d/06_condition_priors.sql:ro
