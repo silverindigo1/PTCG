@@ -54,11 +54,35 @@ as_pg "psql -tAc \"SELECT 1 FROM pg_database WHERE datname='pokearb'\"" | grep -
 export DATABASE_URL="postgresql://pokearb:pokearb@127.0.0.1:5432/pokearb"
 export PGOPTIONS="--client-min-messages=warning"
 
-# Migrations and seeds run once per database. The source table is the marker.
-if ! psql "$DATABASE_URL" -tAc "SELECT to_regclass('public.source')" | grep -q source; then
-  log "applying migrations and seeds"
-  for f in migrations/versions/*.sql seed/sources.sql seed/policy.sql \
-           seed/condition_priors.sql seed/demo/sources.sql; do
+# Migrations are tracked, so a database created by an earlier version of this
+# hook picks up new migrations on the next session instead of silently staying
+# behind. Seeds run once, on a fresh database only.
+q() { psql "$DATABASE_URL" -tAc "$1"; }
+fresh=false
+q "SELECT to_regclass('public.source')" | grep -q source || fresh=true
+psql "$DATABASE_URL" -q -c "CREATE TABLE IF NOT EXISTS schema_migration (
+  version TEXT PRIMARY KEY, applied_at TIMESTAMPTZ NOT NULL DEFAULT now())"
+if [ "$fresh" = false ] && [ "$(q 'SELECT count(*) FROM schema_migration')" = "0" ]; then
+  # Built before tracking existed, by a hook that always applied 0001-0003.
+  for v in 0001 0002 0003; do
+    q "INSERT INTO schema_migration (version) VALUES ('$v') ON CONFLICT DO NOTHING" >/dev/null
+  done
+fi
+for f in migrations/versions/*.sql; do
+  v=$(basename "$f" | cut -c1-4)
+  if ! q "SELECT 1 FROM schema_migration WHERE version='$v'" | grep -q 1; then
+    log "applying migration $(basename "$f")"
+    if psql "$DATABASE_URL" -q -v ON_ERROR_STOP=1 -f "$f" >/dev/null; then
+      q "INSERT INTO schema_migration (version) VALUES ('$v')" >/dev/null
+    else
+      log "failed on $f; later migrations not applied"
+      break
+    fi
+  fi
+done
+if [ "$fresh" = true ]; then
+  log "loading seeds"
+  for f in seed/sources.sql seed/policy.sql seed/condition_priors.sql seed/demo/sources.sql; do
     psql "$DATABASE_URL" -q -v ON_ERROR_STOP=1 -f "$f" >/dev/null || {
       log "failed on $f"
       break

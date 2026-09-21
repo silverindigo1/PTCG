@@ -20,7 +20,11 @@ from pokearb_core.adapters.gated import (  # noqa: E402
     PriceChartingAdapter,
     PsaCertAdapter,
 )
-from pokearb_core.adapters.live import EcbFxAdapter, TcgdexCatalogueAdapter  # noqa: E402
+from pokearb_core.adapters.live import (  # noqa: E402
+    EcbFxAdapter,
+    TcgdexCatalogueAdapter,
+    TcgdexPricingAdapter,
+)
 
 GATED = [EbaySoldAdapter(), PsaCertAdapter(), CardmarketAdapter(), PriceChartingAdapter()]
 
@@ -63,10 +67,19 @@ def test_pricecharting_parser_is_claimed_and_actually_works():
 
 
 def test_live_adapters_are_the_only_ones_enabled():
-    for adapter in (EcbFxAdapter(), TcgdexCatalogueAdapter()):
+    for adapter in (EcbFxAdapter(), TcgdexCatalogueAdapter(), TcgdexPricingAdapter()):
         assert adapter.policy.enabled is True
     for adapter in GATED:
         assert adapter.policy.enabled is False, (
             f"{type(adapter).__name__} must ship disabled until its compliance "
             "review is on file"
         )
+
+
+
+def test_the_price_adapter_does_not_pass_averages_off_as_sales():
+    """Verified live access, yes. Sale-level data, no. Both are stated."""
+    caps = TcgdexPricingAdapter().capabilities()
+    assert caps["verified_live_access"] is True
+    assert caps["individual_sales"] is False
+    assert caps["sale_counts"] is False

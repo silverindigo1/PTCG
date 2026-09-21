@@ -12,7 +12,13 @@ from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Any, Optional
 
-from pokearb_core.adapters.live import EcbFxAdapter
+import asyncio
+
+from pokearb_core.adapters.live import (
+    EcbFxAdapter,
+    TcgdexPricingAdapter,
+    tcgdex_card_id_candidates,
+)
 from pokearb_core.arbitrage.engine import (
     CostAssumptionError,
     CostAssumptions,
@@ -39,6 +45,12 @@ from pokearb_core.types import (
     Money,
     Printing,
     Scenario,
+)
+from pokearb_core.types import FairValue
+from pokearb_core.valuation.benchmark import (
+    BASIS as AVERAGE_BASIS,
+    MarketBenchmark,
+    assess_market_average,
 )
 from pokearb_core.valuation.fair_value import (
     compute_fair_value_curve,
@@ -74,8 +86,41 @@ def _enum(cls, value: Optional[str]):
 
 
 class Context:
-    def __init__(self, repo: Repository) -> None:
+    def __init__(self, repo: Repository, pricing: Optional[Any] = None) -> None:
         self.repo = repo
+        #: Source of published market averages. Injectable so tests never
+        #: depend on the network; live TCGdex by default.
+        self.pricing = pricing if pricing is not None else TcgdexPricingAdapter()
+
+    def _benchmark_blocking(self, variant) -> tuple[MarketBenchmark, dict]:
+        """Try each plausible TCGdex id for the variant. Runs in a thread."""
+        tried: list[str] = []
+        last: dict = {"observation": None, "reasons": (), "sibling_product_ids": None,
+                      "sibling_ids": [], "raw": []}
+        for card_id in tcgdex_card_id_candidates(variant.set_code, variant.number):
+            tried.append(card_id)
+            try:
+                seen = self.pricing.observe(
+                    card_id, printing=variant.printing, variant_id=variant.variant_id,
+                    language=variant.language.value,
+                )
+            except Exception as exc:  # noqa: BLE001
+                last = {**last, "reasons": (f"TCGdex lookup for {card_id} failed: {exc}",)}
+                continue
+            seen["card_id"] = card_id
+            bench = assess_market_average(
+                seen["observation"], as_of=datetime.now(timezone.utc),
+                sibling_product_ids=seen["sibling_product_ids"],
+                parser_reasons=seen["reasons"],
+            )
+            return bench, seen
+        reasons = last["reasons"] or (
+            f"no TCGdex card matched {', '.join(tried) or 'this variant'}",
+        )
+        return assess_market_average(
+            None, as_of=datetime.now(timezone.utc), sibling_product_ids=None,
+            parser_reasons=reasons,
+        ), last
 
     async def source_status(self) -> list[dict[str, Any]]:
         return await self.repo.source_status()
@@ -222,11 +267,32 @@ class Context:
         liquidity = compute_liquidity(sales, listings, as_of=now)
 
         if not fv.sufficient or fv.value is None:
-            return insufficient(
-                "No European resale benchmark with enough completed sales",
-                list(fv.notes),
-                condition=cond_block,
-                liquidity_band=liquidity.band.value,
+            # No sales-based value. The second-best evidence is a published
+            # average, which is fetched live, checked, and if accepted produces
+            # an INDICATIVE answer: a price ceiling, never an opportunity call.
+            bench, seen = await asyncio.to_thread(self._benchmark_blocking, variant)
+            recorder = getattr(self.repo, "record_market_average", None)
+            if recorder is not None and bench.observation is not None:
+                try:
+                    await recorder(variant.variant_id, seen, bench)
+                except Exception:  # noqa: BLE001 - persistence must not block an answer
+                    risk_factors.append(
+                        "the published average could not be stored; this answer "
+                        "is not reproducible from the database"
+                    )
+            if bench.refused:
+                return insufficient(
+                    "No European resale benchmark: not enough completed sales, "
+                    "and the published averages did not pass their checks",
+                    list(fv.notes) + list(bench.reasons),
+                    condition=cond_block,
+                    liquidity_band=liquidity.band.value,
+                )
+            return self._indicative(
+                req=req, match=match, variant=variant, now=now, bench=bench,
+                seen=seen, sales=sales, cond_dist=cond_dist, cond_block=cond_block,
+                fx=fx, policy=policy, assumptions=assumptions,
+                risk_factors=risk_factors, insufficient=insufficient,
             )
 
         # --- condition-adjusted resale value ----------------------------
@@ -432,6 +498,140 @@ class Context:
             source_links=sorted(set(links)),
             computed_at=now.isoformat(),
             data_age_days=assessment.data_quality.newest_input_age_days,
+        )
+
+
+    def _indicative(self, *, req, match, variant, now, bench, seen, sales, cond_dist,
+                    cond_block, fx, policy, assumptions, risk_factors, insufficient):
+        """Economics on a published average. Same cost model, capped verdict."""
+        obs = bench.observation
+        anchor = FairValue(
+            window_days=30, value=bench.value, sufficient=True, n_sales=0,
+            n_effective=Decimal("0"), dispersion=bench.spread, method=AVERAGE_BASIS,
+            notes=bench.reasons,
+        )
+        ladder = condition_value_curve(
+            sales, variant_id=variant.variant_id, as_of=now, anchor=anchor,
+            fx_rates=fx, grade_bucket="raw", market="EU", language=variant.language,
+        )
+        ladder_block = [
+            {"condition": cv.condition.value,
+             "value_eur": str(cv.value.amount) if cv.value else None,
+             "basis": cv.basis.value, "n_sales": cv.n_sales, "note": cv.note}
+            for cv in ladder.values.values()
+        ]
+        if cond_dist is None:
+            resale = bench.value
+            adjusted_block = Traceable(
+                known=False,
+                reason="no condition distribution; the average is used as a near-mint equivalent",
+            )
+            risk_factors.append(
+                "condition unmodelled: a card in worse condition is worth less than this"
+            )
+        else:
+            resale = expected_value(cond_dist, ladder.money_map())
+            if resale is None:
+                return insufficient(
+                    "Condition-adjusted value cannot be computed",
+                    ["a condition carrying meaningful probability has no value estimate"],
+                    condition=cond_block, condition_value_ladder=ladder_block,
+                )
+            adjusted_block = Traceable(
+                value=str(resale.amount), currency="EUR", as_of=now.isoformat(),
+                reason="probability-weighted across a ladder modelled from the average",
+                sources=[obs.source_url] if obs and obs.source_url else [],
+            )
+
+        try:
+            arb = compute_arbitrage(
+                purchase_jpy=Money(req.price_jpy, Currency.JPY),
+                gross_resale_eur=resale, on=now.date(), assumptions=assumptions,
+                policy=policy, fx_rates=fx, required_roi=req.required_roi,
+            )
+        except (PolicyUnverifiedError, CostAssumptionError) as exc:
+            return insufficient(
+                "Landed cost depends on an unverified policy value", [str(exc)],
+                condition=cond_block, valuation_basis=AVERAGE_BASIS,
+            )
+
+        cap = arb.max_buy_jpy
+        if arb.unresolved:
+            headline = "Indicative only: landed cost has unresolved elements"
+        elif cap is None:
+            headline = "Indicative: no price clears the required return on this average"
+        elif req.price_jpy <= cap.amount:
+            headline = (f"Indicative: {req.price_jpy:.0f} JPY is inside the "
+                        f"{cap.amount:.0f} JPY max buy (average-based, not sales)")
+        else:
+            headline = (f"Indicative pass: {req.price_jpy:.0f} JPY is above the "
+                        f"{cap.amount:.0f} JPY max buy (average-based, not sales)")
+
+        market_average = None
+        if obs is not None:
+            market_average = {
+                "provider": obs.provider, "via": obs.via,
+                "card_id": seen.get("card_id"), "product_id": obs.product_id,
+                "finish": obs.finish,
+                "figures_eur": {k: (str(v) if v is not None else None) for k, v in (
+                    ("avg", obs.avg), ("avg7", obs.avg7), ("avg30", obs.avg30),
+                    ("trend", obs.trend), ("low", obs.low))},
+                "provider_updated_at": obs.provider_updated_at.isoformat(),
+                "fetched_at": obs.known_at.isoformat(),
+                "value_used_eur": str(bench.value.amount),
+                "statistic": bench.statistic,
+                "spread": str(bench.spread),
+                "siblings_checked": len(seen.get("sibling_ids") or []),
+                "sources": ["https://tcgdex.dev/markets-prices", "https://tcgdex.dev/faq"],
+            }
+
+        return QuickCheckResponse(
+            verdict=Verdict.INDICATIVE,
+            headline=headline,
+            match_confidence=match.best.confidence,  # type: ignore[union-attr]
+            match_outcome=match.outcome.value,
+            variant_id=variant.variant_id,
+            canonical_key=variant.canonical_key,
+            valuation_basis=AVERAGE_BASIS,
+            market_average=market_average,
+            japanese_market_price=Traceable(
+                value=str(req.price_jpy), currency="JPY", as_of=now.isoformat(),
+                reason="the shelf price supplied by the user",
+            ),
+            european_fair_value=Traceable(
+                value=str(bench.value.amount), currency="EUR", as_of=now.isoformat(),
+                reason=f"Cardmarket averages via TCGdex: {bench.statistic}; not sales-based",
+                sources=[obs.source_url] if obs and obs.source_url else [],
+            ),
+            condition_adjusted_fair_value=adjusted_block,
+            condition_value_ladder=ladder_block,
+            expected_net_resale=Traceable(value=str(arb.net_proceeds_eur.amount), currency="EUR"),
+            expected_profit_eur=Traceable(value=str(arb.expected_profit_eur.amount), currency="EUR"),
+            capital_deployed_eur=Traceable(
+                value=str(arb.capital_deployed_eur.amount), currency="EUR",
+                reason=arb.capital_basis,
+            ),
+            capital_basis=arb.capital_basis,
+            unresolved_costs=list(arb.unresolved),
+            expected_roi=str(arb.roi.quantize(Decimal("0.0001"))),
+            break_even_resale_eur=str(arb.break_even_resale_eur.amount),
+            max_buy_price_jpy=str(cap.amount) if cap else None,
+            strong_buy_price_jpy=str(arb.strong_buy_jpy.amount) if arb.strong_buy_jpy else None,
+            target_buy_price_jpy=str(arb.target_buy_jpy.amount) if arb.target_buy_jpy else None,
+            do_not_buy_above_jpy=str(cap.amount) if cap else None,
+            liquidity_band="unmeasurable",
+            condition=cond_block,
+            risk_factors=risk_factors + list(arb.notes) + [
+                "average-based valuation: the number of sales behind the figures "
+                "is unknown and liquidity cannot be measured, so this is a price "
+                "ceiling and not an opportunity call",
+            ],
+            reasons=list(bench.reasons),
+            source_links=sorted({u for u in (
+                (obs.source_url if obs else None),
+                "https://tcgdex.dev/markets-prices", "https://tcgdex.dev/faq",
+            ) if u}),
+            computed_at=now.isoformat(),
         )
 
 

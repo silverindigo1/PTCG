@@ -8,7 +8,7 @@ export DATABASE_URL
 PYTHON ?= python3
 
 .PHONY: help install test test-unit test-integration lint typecheck up down \
-        db-up db-down migrate seed seed-demo smoke demo
+        db-up db-down migrate seed seed-demo smoke demo price-check
 
 help:
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | awk -F':.*?## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -63,3 +63,7 @@ demo:  ## One complete workflow: import to snapshot and alert decision
 
 smoke:  ## End-to-end check against live ECB rates
 	PYTHONPATH=packages/core $(PYTHON) scripts/smoke.py
+
+price-check:  ## Live check: make price-check CARD=SV2a-173 PRICE=3500 [ARGS="--scenario C_proxy"]
+	@test -n "$(CARD)" -a -n "$(PRICE)" || (echo "usage: make price-check CARD=SV2a-173 PRICE=3500"; exit 2)
+	PYTHONPATH=packages/core $(PYTHON) scripts/price_check.py $(CARD) --price $(PRICE) $(ARGS)

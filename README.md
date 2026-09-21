@@ -39,7 +39,7 @@ system working, not failing.
 ```bash
 cp .env.example .env          # fill in POKEARB_API_KEY at minimum
 make install
-make test-unit                # 83 tests, no database, no network
+make test-unit                # 109 tests, no database, no network
 make smoke                    # end-to-end against live ECB rates
 ```
 
@@ -48,7 +48,7 @@ Full stack, including the database:
 ```bash
 docker compose up -d --build  # migrations and seed run on first boot
 curl -H "x-api-key: $POKEARB_API_KEY" localhost:8000/health
-make test                     # adds 14 database integration tests, 97 in all
+make test                     # adds 15 database integration tests, 124 in all
 make demo                     # one complete workflow, start to finish
 ```
 
@@ -209,7 +209,8 @@ The cycle report never calls an unwired stage a success.
 | Source | Parser written | Tested against | Live access |
 |---|---|---|---|
 | ECB reference rates | yes | real responses | **verified** |
-| TCGdex | yes | real responses | **verified** |
+| TCGdex catalogue | yes | real responses | **verified** |
+| Cardmarket averages via TCGdex | yes | recorded real responses | **verified**; averages only, never sales |
 | PriceCharting | yes, column translation | published column contract | never exercised |
 | eBay Marketplace Insights | **no** | nothing | never granted |
 | PSA cert lookup | **no** | nothing | never granted |
@@ -228,6 +229,22 @@ none, because inventing default grade probabilities is exactly the fabrication
 the brief forbids. The engine takes them as an input once you have a calibrated
 source.
 
+
+
+---
+
+## Live prices without approval
+
+Quick Check and `make price-check` now fall back to Cardmarket's published
+averages, relayed by TCGdex, when there are not enough completed sales:
+
+```
+make price-check CARD=SV2a-173 PRICE=2000
+```
+
+Averages are not sales, so the answer is `INDICATIVE`: a maximum buy price and
+whether the ask is inside it, never an opportunity call. The acceptance rules,
+what they refuse, and the known limits are in `docs/05-market-averages.md`.
 
 ---
 
