@@ -1,0 +1,78 @@
+name: Daglig prisopdatering
+
+on:
+  schedule:
+    # 05:15 UTC. Deliberately not on the hour: GitHub's scheduler queues heavily
+    # at :00 and a delayed run is a missed day of price history.
+    - cron: "15 5 * * *"
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Kun disse butikker, kommasepareret (tom = alle)"
+        required: false
+        default: ""
+
+permissions:
+  contents: write   # to commit the day's prices back to the repository
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pokearb-daily
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Installer afhaengigheder
+        run: pip install -r requirements.txt
+
+      - name: Koer testene
+        # A broken classifier would write bad prices into the permanent
+        # history, so the tests gate the scrape rather than follow it.
+        run: python -m pytest tests -q
+
+      - name: Hent priser og byg sitet
+        env:
+          POKEARB_CONTACT_URL: https://github.com/${{ github.repository }}
+        run: |
+          python -m pokearb.cli build --verbose \
+            ${{ github.event.inputs.only && format('--only {0}', github.event.inputs.only) || '' }}
+
+      - name: Vis koerselsloggen
+        if: always()
+        run: cat data/run_log.json || true
+
+      - name: Gem dagens priser i repoet
+        run: |
+          git config user.name "pokearb-bot"
+          git config user.email "pokearb-bot@users.noreply.github.com"
+          git add data/
+          if git diff --staged --quiet; then
+            echo "Ingen aendringer i data/"
+          else
+            git commit -m "Priser ${{ github.run_id }}: $(date -u +%Y-%m-%d)"
+            git push
+          fi
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+      - id: deploy
+        uses: actions/deploy-pages@v4

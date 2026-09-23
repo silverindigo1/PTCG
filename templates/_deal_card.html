@@ -1,0 +1,16 @@
+<li class="deal-card">
+  <a href="{{ root }}produkt/{{ product.key }}.html">
+    <span class="deal-top">
+      {% include "_tile.html" %}
+      <span class="deal-title">{{ product.title_da }}</span>
+    </span>
+    <span class="deal-price">
+      <strong>{{ product.cheapest.total_dkk | dkk }}</strong>
+      <span class="deal-pct">{{ product.discount_pct | round(0) | int }} % under markedet</span>
+    </span>
+    <span class="deal-meta muted">
+      hos {{ product.cheapest.shop_name }}{% if product.cheapest.pre_order %} (forudbestilling){% endif %}. Markedspris {{ product.market_price | dkk }},
+      median af {{ product.in_stock_offers | length }} butikker.
+    </span>
+  </a>
+</li>

@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Bedste køb og største besparelser | PokeArb{% endblock %}
+{% block description %}Produkter hvor den billigste butik ligger klart under markedsprisen, og hvor butikkernes priser ligger længst fra hinanden.{% endblock %}
+
+{% block content %}
+<h1>Bedste køb</h1>
+<p class="lede">
+  Her ligger den billigste samlede pris mindst 5 % under markedsprisen.
+  Markedsprisen er medianen af alle butikker der har varen på lager, og
+  kræver mindst tre af dem.
+</p>
+
+{% if all_deals %}
+<ul class="deal-grid">
+  {% for product in all_deals %}{% include "_deal_card.html" %}{% endfor %}
+</ul>
+{% else %}
+<p class="empty">Ingen produkter ligger lige nu 5 % eller mere under markedsprisen.</p>
+{% endif %}
+
+<h2>Største prisforskelle</h2>
+<p class="muted">
+  Forskellen mellem den billigste og den dyreste butik, på varer mindst to
+  butikker har på lager, regnet på den samlede pris med fragt til Danmark.
+  Told og importgebyrer er ikke med.
+</p>
+
+{% if savings %}
+<table class="offers savings-table">
+  <thead>
+    <tr>
+      <th scope="col">Produkt</th>
+      <th scope="col" class="num">Billigst</th>
+      <th scope="col" class="num">Dyrest</th>
+      <th scope="col" class="num">Forskel</th>
+      <th scope="col" class="num">Procent</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for product in savings %}
+    {% set lo = product.cheapest %}
+    {% set hi = product.dearest_in_stock %}
+    <tr>
+      <th scope="row"><a href="{{ root }}produkt/{{ product.key }}.html">{{ product.title_da }}</a></th>
+      <td class="num">{{ lo.total_dkk | dkk }}<span class="muted block">{{ lo.shop_name }}</span></td>
+      <td class="num">{{ hi.total_dkk | dkk }}<span class="muted block">{{ hi.shop_name }}</span></td>
+      <td class="num"><strong class="saving-strong">{{ product.spread_dkk | dkk }}</strong></td>
+      <td class="num">{{ product.spread_pct | string | replace('.', ',') }} %</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p class="empty">Der er endnu ikke nok butikker på lager til at sammenligne. Kom igen efter næste kørsel.</p>
+{% endif %}
+{% endblock %}

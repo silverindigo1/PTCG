@@ -1,0 +1,192 @@
+{% extends "base.html" %}
+{% block title %}PokeArb: billigste europæiske pris på forseglet Pokémon TCG{% endblock %}
+
+{% block content %}
+<section class="hero">
+  <h1>Billigste europæiske pris, i kroner</h1>
+  <p class="lede">
+    Forseglede Pokémon-produkter fra butikker i {{ country_text }}, rangeret på
+    den samlede pris med fragt til Danmark.
+  </p>
+  <dl class="stat-row">
+    <div class="stat"><dt>Produkter</dt><dd>{{ product_count }}</dd></div>
+    <div class="stat"><dt>Butikker</dt><dd><a href="butikker.html">{{ live_shop_count }}</a></dd></div>
+    <div class="stat"><dt>Priser i dag</dt><dd>{{ offer_count }}</dd></div>
+    <div class="stat"><dt>Gode køb</dt><dd><a href="besparelser.html">{{ deal_count }}</a></dd></div>
+  </dl>
+</section>
+
+{% if deals %}
+<section class="deals" aria-labelledby="deals-heading">
+  <div class="section-head">
+    <h2 id="deals-heading">Bedste køb lige nu</h2>
+    <a href="besparelser.html">Se alle {{ deal_count }}</a>
+  </div>
+  <p class="muted">
+    Billigste samlede pris mindst 5 % under markedsprisen, som er medianen af
+    alle butikker der har varen på lager. Kræver mindst tre butikker, så én
+    dyr butik ikke kan skabe et tilbud alene.
+  </p>
+  <ul class="deal-grid">
+    {% for product in deals[:6] %}{% include "_deal_card.html" %}{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section class="controls" aria-label="Søg og filtre">
+  <div class="field field-search">
+    <label for="q">Søg efter sæt eller produkt</label>
+    <input type="search" id="q" placeholder="fx Surging Sparks eller ETB" autocomplete="off">
+  </div>
+  <div class="filter-row">
+    <div class="field">
+      <label for="f-type">Produkttype</label>
+      <select id="f-type">
+        <option value="">Alle typer</option>
+        <option value="etb">Elite Trainer Box</option>
+        <option value="etb_pc">Pokémon Center ETB</option>
+        <option value="booster_box">Booster box / display</option>
+        <option value="booster_bundle">Booster bundle</option>
+        <option value="upc">Ultra Premium Collection</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-lang">Sprog</label>
+      <select id="f-lang">
+        <option value="">Alle sprog</option>
+        <option value="en">Engelsk</option>
+        <option value="ja">Japansk</option>
+        <option value="de">Tysk</option>
+        <option value="fr">Fransk</option>
+        <option value="ko">Koreansk</option>
+        <option value="zh">Kinesisk</option>
+        <option value="es">Spansk</option>
+        <option value="it">Italiensk</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-country">Butikkens land</label>
+      <select id="f-country">
+        <option value="">Alle lande</option>
+        <option value="DK">Danmark</option>
+        <option value="DE">Tyskland</option>
+        <option value="NL">Holland</option>
+        <option value="SE">Sverige</option>
+        <option value="BE">Belgien</option>
+        <option value="ES">Spanien</option>
+        <option value="IT">Italien</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-sort">Sortér</label>
+      <select id="f-sort">
+        <option value="set">Nyeste sæt først</option>
+        <option value="discount">Største rabat</option>
+        <option value="shops">Flest butikker</option>
+        <option value="price-asc">Laveste pris</option>
+        <option value="price-desc">Højeste pris</option>
+      </select>
+    </div>
+    <div class="field field-check">
+      <input type="checkbox" id="f-stock">
+      <label for="f-stock">Kun på lager</label>
+    </div>
+    <div class="field field-check">
+      <input type="checkbox" id="f-watch">
+      <label for="f-watch">Kun overvågede</label>
+    </div>
+  </div>
+  <p class="result-count" id="result-count" role="status"></p>
+</section>
+
+{% if drops %}
+<section class="drops" aria-labelledby="drops-heading">
+  <h2 id="drops-heading">Faldet i pris</h2>
+  <p class="muted">
+    Samlet pris under produktets eget gennemsnit for de seneste dage. Kræver
+    mindst tre målinger, så listen er tom de første dage efter en ny start.
+  </p>
+  <ul class="drop-list">
+    {% for row in drops %}
+    <li class="drop-item">
+      <a href="produkt/{{ row.product.key }}.html">
+        {% with product = row.product %}{% include "_tile.html" %}{% endwith %}
+        <span class="drop-body">
+          <span class="drop-title">{{ row.product.title_da }}</span>
+          <span class="drop-meta">
+            <strong>{{ row.today | dkk }}</strong>
+            <span class="muted">før {{ row.baseline | dkk }}</span>
+          </span>
+        </span>
+        <span class="drop-pct">-{{ row.drop_pct | string | replace('.', ',') }} %</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% for group in groups %}
+<section class="set-block" data-set="{{ group.name }}">
+  <h2 class="set-heading">
+    <a href="saet/{{ group.slug }}.html">{{ group.name }}</a>
+    {% if not group.matched %}<span class="tag tag-warn" title="Sætnavnet kunne ikke matches mod den officielle liste, så det står som butikken skrev det">uden match</span>{% endif %}
+  </h2>
+  <p class="set-meta muted">
+    {% if group.release_date %}Udgivet {{ group.release_date | dk_date }}{% else %}Udgivelsesdato ukendt{% endif %}
+    &middot; {{ group['products'] | length }} produkter
+    {% if group.cheapest %}&middot; fra {{ group.cheapest | dkk }}{% endif %}
+  </p>
+
+  <ul class="product-list">
+    {% for product in group['products'] %}
+    {% set cheapest = product.cheapest %}
+    <li class="product-row"
+        data-key="{{ product.key }}"
+        data-title="{{ product.title_da | lower }}"
+        data-type="{{ product.product_type.value }}"
+        data-lang="{{ product.language.value }}"
+        data-countries="{{ product.offers | map(attribute='country') | unique | join(',') }}"
+        data-stock="{{ '1' if product.in_stock_offers else '0' }}"
+        data-price="{{ cheapest.total_dkk if cheapest and cheapest.total_dkk is not none else '' }}"
+        data-discount="{{ product.discount_pct if product.discount_pct is not none else '' }}"
+        data-shops="{{ product.shop_count }}">
+      <a class="product-link" href="produkt/{{ product.key }}.html">
+        {% include "_tile.html" %}
+        <span class="product-label">
+          <span class="product-name">{{ product.product_type.label_da }}</span>
+          <span class="product-set">{{ product.set_name }}</span>
+          <span class="product-tags">
+            <span class="tag">{{ product.language.label_da }}</span>
+            {% if product.shop_count > 1 %}<span class="tag">{{ product.shop_count }} butikker</span>{% endif %}
+            {% if not product.in_stock_offers %}<span class="tag tag-out">udsolgt overalt</span>{% endif %}
+          </span>
+        </span>
+      </a>
+      <span class="product-price">
+        {% if cheapest %}
+          <strong class="price">{{ cheapest.total_dkk | dkk }}</strong>
+          <span class="muted">i alt hos {{ cheapest.shop_name }}</span>
+          {% if product.discount_pct and product.discount_pct >= 1 %}<span class="saving">{{ product.discount_pct | round(0) | int }} % under markedet</span>
+          {% elif product.spread_dkk %}<span class="saving">spar op til {{ product.spread_dkk | dkk }}</span>{% endif %}
+        {% else %}
+          <span class="muted">ingen pris</span>
+        {% endif %}
+        <button class="watch-btn" type="button" data-watch="{{ product.key }}"
+                aria-pressed="false" title="Overvåg dette produkt">
+          <span aria-hidden="true">&#9734;</span>
+          <span class="sr-only">Overvåg {{ product.title_da }}</span>
+        </button>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endfor %}
+
+<section class="flat-block" id="flat-block" hidden aria-label="Produkter sorteret">
+  <ul class="product-list flat-list" id="flat-list"></ul>
+</section>
+
+<p class="empty" id="empty-state" hidden>Ingen produkter matcher filtrene.</p>
+{% endblock %}

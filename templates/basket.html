@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Min liste: billigste samlede kurv | PokeArb{% endblock %}
+{% block description %}Find den billigste måde at købe alle dine overvågede produkter på, når hver butik tager fragt én gang pr. ordre.{% endblock %}
+
+{% block content %}
+<h1>Min liste</h1>
+<p class="lede">
+  Køber du flere ting, er det sjældent billigst at tage hver vare hos den
+  butik der er billigst på netop den. Hver pakke koster fragt. PokeArb regner
+  den billigste fordeling ud for hele listen, med én fragt pr. butik og fri
+  fragt hvor butikken giver det.
+</p>
+
+<div class="basket" id="basket" data-offers-url="{{ root }}data/offers.json" data-root="{{ root }}">
+  <form class="add-form basket-add" id="basket-add" autocomplete="off">
+    <div class="field field-grow">
+      <label for="b-product">Tilføj produkt</label>
+      <input type="text" id="b-product" list="b-products" placeholder="Skriv sæt eller produkttype">
+      <datalist id="b-products"></datalist>
+    </div>
+    <button class="btn-primary" type="submit">Tilføj</button>
+  </form>
+  <p class="basket-msg" id="basket-msg" role="status"></p>
+
+  <div id="basket-list"></div>
+
+  <p class="empty" id="basket-empty" hidden>
+    Listen er tom. Tryk på stjernen ud for et produkt på
+    <a href="{{ root }}index.html">prissiden</a>, eller tilføj det herover.
+  </p>
+
+  <section id="basket-result" hidden aria-live="polite">
+    <h2>Billigste måde at købe det hele</h2>
+    <div class="summary" id="basket-summary"></div>
+    <div id="basket-orders"></div>
+    <p class="muted" id="basket-note"></p>
+  </section>
+</div>
+
+<p class="muted">
+  Listen gemmes kun i din browser. Fragt til butikker uden oplyst sats følger
+  dine egne tal under "Fragtsatser" øverst på siden. Fri fragt-grænser er
+  omregnet til kroner med dagens kurs og kan afvige lidt ved checkout.
+</p>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ root }}assets/basket.js" defer></script>
+{% endblock %}

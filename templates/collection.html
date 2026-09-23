@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}Min samling | PokeArb{% endblock %}
+{% block description %}Følg værdien af din egen samling af forseglede produkter.{% endblock %}
+
+{% block content %}
+<h1>Min samling</h1>
+<p class="lede">
+  Tilføj produkter med antal og købspris, så regner PokeArb den aktuelle
+  værdi ud fra den billigste pris på lager lige nu.
+  Samlingen ligger kun i din egen browser. Den sendes ikke nogen steder hen,
+  og den følger ikke med til en anden enhed. Rydder du browserdata, er den væk.
+</p>
+
+<form class="add-form" id="add-form">
+  <div class="field">
+    <label for="c-product">Produkt</label>
+    <input list="c-products" id="c-product" name="product" placeholder="Begynd at skrive et sætnavn" autocomplete="off" required>
+    <datalist id="c-products"></datalist>
+  </div>
+  <div class="field field-narrow">
+    <label for="c-qty">Antal</label>
+    <input type="number" id="c-qty" name="qty" min="1" step="1" value="1" required>
+  </div>
+  <div class="field field-narrow">
+    <label for="c-cost">Købspris pr. stk. i kroner</label>
+    <input type="number" id="c-cost" name="cost" min="0" step="0.01" placeholder="fx 389" required>
+  </div>
+  <button class="btn-primary" type="submit">Tilføj</button>
+</form>
+
+<div class="summary" id="collection-summary" hidden>
+  <div class="summary-card">
+    <p class="summary-label">Købt for</p>
+    <p class="summary-value" id="total-cost">-</p>
+  </div>
+  <div class="summary-card">
+    <p class="summary-label">Værdi i dag</p>
+    <p class="summary-value" id="total-value">-</p>
+  </div>
+  <div class="summary-card">
+    <p class="summary-label">Gevinst eller tab</p>
+    <p class="summary-value" id="total-delta">-</p>
+    <p class="summary-sub" id="total-delta-pct"></p>
+  </div>
+</div>
+
+<div id="collection-table-wrap"></div>
+<p class="empty" id="collection-empty">Din samling er tom.</p>
+
+<p class="muted">
+  Værdien er den billigste samlede pris i dag, altså butikkens pris plus fragt
+  til Danmark. Told og gebyrer er ikke med, og det du reelt kan sælge for, vil
+  ligge under.
+</p>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% set cheapest = product.cheapest %}
+<table class="offers pa-offers" data-offers>
+  <caption class="sr-only">Priser på {{ product.title_da }}, sorteret efter samlet pris inklusive fragt</caption>
+  <thead>
+    <tr>
+      <th scope="col">Butik</th>
+      <th scope="col">Land</th>
+      <th scope="col" class="num">Vare</th>
+      <th scope="col" class="num">Fragt</th>
+      <th scope="col" class="num">I alt</th>
+      <th scope="col" class="num">Butikkens pris</th>
+      <th scope="col">Lager</th>
+      <th scope="col"><span class="sr-only">Link til butikken</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for offer in product.sorted_offers() %}
+    <tr class="{% if cheapest and offer is sameas cheapest %}is-cheapest{% endif %}{% if not offer.in_stock %} is-out{% endif %}"
+        data-item-dkk="{{ offer.amount_dkk if offer.amount_dkk is not none else '' }}"
+        data-country="{{ offer.country }}"
+        data-ship-dkk="{{ offer.shipping_dkk if offer.shipping_dkk is not none else '' }}"
+        data-ship-verified="{{ '1' if offer.shipping_verified else '0' }}"
+        data-in-stock="{{ '1' if offer.in_stock else '0' }}">
+      <th scope="row">
+        {{ offer.shop_name }}
+        <span class="tag tag-best" data-best-badge {% if not (cheapest and offer is sameas cheapest and offer.in_stock) %}hidden{% endif %}>billigst i alt</span>
+        {% if offer.pre_order and offer.in_stock %}<span class="tag tag-warn" title="Butikken skriver at varen er til forudbestilling og ikke sendes med det samme">forudbestilling</span>{% endif %}
+        {% if offer.stale %}<span class="tag tag-warn" title="Butikken svarede ikke ved seneste kørsel">pris fra {{ offer.captured_at | dk_date }}</span>{% endif %}
+      </th>
+      <td>{{ offer.country }}</td>
+      <td class="num">{{ offer.amount_dkk | dkk }}</td>
+      <td class="num" data-ship-cell>
+        {% if offer.shipping_dkk == 0 %}
+          <span class="stock-in">fri fragt</span>
+        {% else %}
+          {{ offer.shipping_dkk | dkk }}
+        {% endif %}
+        {% if not offer.shipping_verified %}<span class="tag tag-warn" title="Butikken oplyser ingen sats til Danmark. Dette er PokeArbs antagelse, som du kan ændre ovenfor.">anslået</span>{% endif %}
+      </td>
+      <td class="num" data-total-cell><strong>{{ offer.total_dkk | dkk }}</strong></td>
+      <td class="num muted">{{ offer.amount | money(offer.currency) }}</td>
+      <td>{% if offer.in_stock %}<span class="stock-in">På lager</span>{% else %}<span class="stock-out">Udsolgt</span>{% endif %}</td>
+      <td><a class="shop-link" href="{{ offer.url }}" rel="nofollow noopener" target="_blank">Til butikken<span class="sr-only"> hos {{ offer.shop_name }}, åbner i nyt vindue</span></a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

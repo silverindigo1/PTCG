@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}{{ product.title_da }}: billigste pris | PokeArb{% endblock %}
+{% block description %}Alle butikspriser på {{ product.title_da }} omregnet til kroner, med prishistorik.{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Brødkrummer">
+  <a href="{{ root }}index.html">Forside</a> <span aria-hidden="true">/</span>
+  <a href="{{ root }}saet/{{ set_slug(product) }}.html">{{ product.set_name }}</a> <span aria-hidden="true">/</span>
+  <span>{{ product.product_type.label_da }}</span>
+</nav>
+
+<div class="product-head">
+  {% include "_tile.html" %}
+  <div>
+    <h1>{{ product.title_da }}</h1>
+    <p class="muted">
+      {% if product.set_release_date %}Udgivet {{ product.set_release_date | dk_date }}.{% endif %}
+      {% if not product.set_matched %}Sætnavnet er ikke matchet mod den officielle liste.{% endif %}
+    </p>
+  </div>
+</div>
+
+{% set cheapest = product.cheapest %}
+{% set item_only = product.cheapest_item_only %}
+<div class="summary">
+  <div class="summary-card">
+    <p class="summary-label">Billigst i alt, på lager</p>
+    <p class="summary-value">{% if cheapest %}{{ cheapest.total_dkk | dkk }}{% else %}-{% endif %}</p>
+    <p class="summary-sub">
+      {% if cheapest %}
+        {{ cheapest.shop_name }}, {{ cheapest.country }}.
+        {{ cheapest.amount_dkk | dkk }} for varen{% if cheapest.shipping_dkk == 0 %} og fri fragt{% else %} plus {{ cheapest.shipping_dkk | dkk }} fragt{% endif %}{% if not cheapest.shipping_verified %} (anslået){% endif %}.
+      {% else %}ingen butik har varen{% endif %}
+    </p>
+  </div>
+  {% if product.market_price %}
+  <div class="summary-card">
+    <p class="summary-label">Markedspris</p>
+    <p class="summary-value">{{ product.market_price | dkk }}</p>
+    <p class="summary-sub">
+      Median af {{ product.in_stock_offers | length }} butikker på lager.
+      {% if product.discount_pct and product.discount_pct >= 1 %}Den billigste ligger <strong class="saving-strong">{{ product.discount_pct | round(0) | int }} % under</strong>.{% else %}Den billigste ligger tæt på markedet.{% endif %}
+    </p>
+  </div>
+  {% endif %}
+  {% if product.spread_dkk %}
+  <div class="summary-card">
+    <p class="summary-label">Forskel mellem butikkerne</p>
+    <p class="summary-value">{{ product.spread_dkk | dkk }}</p>
+    <p class="summary-sub">{{ product.spread_pct | string | replace('.', ',') }} % billigere end den dyreste på lager</p>
+  </div>
+  {% endif %}
+  <div class="summary-card">
+    <p class="summary-label">Butikker der fører varen</p>
+    <p class="summary-value">{{ product.offers | length }}</p>
+    <p class="summary-sub">{{ product.in_stock_offers | length }} har den på lager</p>
+  </div>
+</div>
+
+{% with strip_class = "strip-lg" %}{% include "_strip.html" %}{% endwith %}
+
+{% if product.shipping_changes_the_answer %}
+<p class="callout">
+  Fragten vender resultatet her. {{ item_only.shop_name }} har den laveste
+  varepris på {{ item_only.amount_dkk | dkk }}, men med fragt lander
+  {{ cheapest.shop_name }} lavest i alt.
+</p>
+{% endif %}
+
+<div class="action-row">
+<button class="btn-ghost watch-btn watch-btn-large" type="button" data-watch="{{ product.key }}"
+        aria-pressed="false">
+  <span aria-hidden="true">&#9734;</span> <span data-watch-label>Overvåg</span>
+</button>
+<button class="btn-primary" type="button" id="add-to-collection"
+        data-key="{{ product.key }}"
+        data-title="{{ product.title_da }}"
+        data-price="{{ cheapest.amount_dkk if cheapest else '' }}">
+  Tilføj til min samling
+</button>
+</div>
+<p class="collection-feedback" id="collection-feedback" role="status"></p>
+
+<h2>Priser hos butikkerne</h2>
+<p class="muted">
+  Sorteret efter samlet pris. Satser markeret "anslået" oplyser butikken ikke,
+  så de kan rettes i "Fragtsatser" øverst på siden.
+</p>
+{% include "_offer_table.html" %}
+
+<h2>Prisudvikling</h2>
+{% if series | length > 1 %}
+<figure class="chart-figure viz-root">
+  <figcaption id="chart-caption">
+    Billigste pris pr. dag, i kroner. {{ series | length }} målinger siden {{ series[0].d | dk_date }}.
+  </figcaption>
+  <div class="chart" id="price-chart" role="img" aria-labelledby="chart-caption" aria-describedby="chart-table"></div>
+</figure>
+<details class="table-view">
+  <summary>Vis tallene bag grafen</summary>
+  <table class="offers" id="chart-table">
+    <caption class="sr-only">Billigste pris pr. dag</caption>
+    <thead><tr><th scope="col">Dato</th><th scope="col" class="num">Billigste pris</th></tr></thead>
+    <tbody>
+      {% for point in series | reverse %}
+      <tr><th scope="row">{{ point.d | dk_date }}</th><td class="num">{{ point.v | dkk }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</details>
+<script type="application/json" id="price-series">{{ series | tojson }}</script>
+{% else %}
+<p class="muted">
+  Der er endnu kun {{ series | length }} måling for dette produkt. Grafen dukker
+  op, når der er mindst to dage at tegne.
+</p>
+{% endif %}
+{% endblock %}

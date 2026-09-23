@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Butikkerne | PokeArb{% endblock %}
+{% block description %}Alle butikker PokeArb sammenligner: hvor tit de er billigst, hvordan de ligger i forhold til markedet, og hvad de tager i fragt til Danmark.{% endblock %}
+
+{% block content %}
+<h1>Butikkerne</h1>
+<p class="lede">
+  {{ shops | length }} butikker i {{ country_text }}. Prisindekset er butikkens
+  typiske samlede pris i forhold til markedsprisen: 100 er lige på markedet,
+  95 er 5 % under.
+</p>
+
+<table class="offers shops-table">
+  <thead>
+    <tr>
+      <th scope="col">Butik</th>
+      <th scope="col">Land</th>
+      <th scope="col" class="num">På lager</th>
+      <th scope="col" class="num">Billigst</th>
+      <th scope="col" class="num">Prisindeks</th>
+      <th scope="col">Fragt til Danmark</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for shop in shops | sort(attribute='name') %}
+    {% set st = shop.stats %}
+    <tr class="{% if not shop.count %}is-out{% endif %}">
+      <th scope="row"><a href="butik/{{ shop.shop }}.html">{{ shop.name }}</a></th>
+      <td>{{ shop.country }}</td>
+      <td class="num">{{ st.in_stock | default(0) }}</td>
+      <td class="num">
+        {% if st.win_pct is not none and st.contested %}{{ st.wins }} af {{ st.contested }}<span class="muted block">{{ st.win_pct }} %</span>{% else %}-{% endif %}
+      </td>
+      <td class="num">{% if st.index %}<strong class="{% if st.index < 100 %}saving-strong{% endif %}">{{ st.index }}</strong>{% else %}-{% endif %}</td>
+      <td>{{ shop.rule }}{% if not shop.rule_verified %} <span class="tag tag-warn">anslået</span>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="muted">
+  "Billigst" tæller kun varer som mindst to butikker har på lager. Prisindekset
+  kræver mindst tre varer med en markedspris og bruger fragt som vist.
+</p>
+{% endblock %}

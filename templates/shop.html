@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}{{ shop.name }}: priser og fragt | PokeArb{% endblock %}
+{% block description %}Hvor tit {{ shop.name }} er billigst, og hvad butikken tager i fragt til Danmark.{% endblock %}
+
+{% block content %}
+{% set st = shop.stats %}
+<nav class="crumbs" aria-label="Brødkrummer">
+  <a href="{{ root }}index.html">Forside</a> <span aria-hidden="true">/</span>
+  <a href="{{ root }}butikker.html">Butikker</a> <span aria-hidden="true">/</span>
+  <span>{{ shop.name }}</span>
+</nav>
+
+<h1>{{ shop.name }}</h1>
+<p class="muted">
+  {{ shop.country }}, priser i {{ shop.currency }}.
+  <a href="{{ shop.url }}" rel="nofollow noopener" target="_blank">Til butikken<span class="sr-only">, åbner i nyt vindue</span></a>
+  {% if not shop.shipping_confirmed %}<span class="tag tag-warn">levering til DK ikke bekræftet</span>{% endif %}
+</p>
+
+<div class="summary">
+  <div class="summary-card">
+    <p class="summary-label">Varer på lager</p>
+    <p class="summary-value">{{ st.in_stock | default(0) }}</p>
+    <p class="summary-sub">af {{ st.offers | default(0) }} hentet</p>
+  </div>
+  <div class="summary-card">
+    <p class="summary-label">Billigst i alt</p>
+    <p class="summary-value">{% if st.win_pct is not none and st.contested %}{{ st.win_pct }} %{% else %}-{% endif %}</p>
+    <p class="summary-sub">{% if st.contested %}{{ st.wins }} af {{ st.contested }} varer som flere butikker har{% else %}ingen varer at sammenligne{% endif %}</p>
+  </div>
+  <div class="summary-card">
+    <p class="summary-label">Prisindeks</p>
+    <p class="summary-value">{{ st.index if st.index else '-' }}</p>
+    <p class="summary-sub">100 = markedsprisen{% if st.index %}, {% if st.index < 100 %}{{ 100 - st.index }} % under{% elif st.index > 100 %}{{ st.index - 100 }} % over{% else %}lige på{% endif %}{% endif %}</p>
+  </div>
+</div>
+
+<h2>Fragt til Danmark</h2>
+<p>
+  {{ shop.rule }}{% if not shop.rule.endswith('.') %}.{% endif %}
+  {% if shop.rule_verified and shop.rule_url %}Kilde: <a href="{{ shop.rule_url }}" rel="nofollow noopener" target="_blank">butikkens fragtside</a>.{% elif not shop.rule_verified %}Satsen kan rettes under "Fragtsatser" øverst på siden.{% endif %}
+</p>
+
+<h2>Her er {{ shop.name }} billigst</h2>
+{% if st.best %}
+<ul class="product-list">
+  {% for product in st.best[:40] %}
+  <li class="product-row">
+    <a class="product-link" href="{{ root }}produkt/{{ product.key }}.html">
+      {% include "_tile.html" %}
+      <span class="product-label">
+        <span class="product-name">{{ product.title_da }}</span>
+        <span class="product-tags"><span class="tag">{{ product.shop_count }} butikker</span></span>
+      </span>
+    </a>
+    <span class="product-price">
+      <strong class="price">{{ product.cheapest.total_dkk | dkk }}</strong>
+      {% if product.discount_pct and product.discount_pct >= 1 %}<span class="saving">{{ product.discount_pct | round(0) | int }} % under markedet</span>{% endif %}
+    </span>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty">Butikken er ikke billigst på nogen vare som andre også har på lager lige nu.</p>
+{% endif %}
+
+<p class="muted">
+  Status for seneste kørsel:
+  {% if shop.status == 'ok' %}opdateret {{ shop.captured_at | dk_date }}{% elif shop.status == 'stale' %}butikken svarede ikke, priser fra {{ shop.captured_at | dk_date }}{% else %}ingen data{% endif %}.
+</p>
+{% endblock %}

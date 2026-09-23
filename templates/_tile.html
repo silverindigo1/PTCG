@@ -1,0 +1,21 @@
+{# Original cover art, generated from the product key.
+   No shop photograph is copied: none of the shops whose terms we checked
+   grants image reuse, so the site draws its own tiles instead. #}
+{% set art = tile_art(product) %}
+<svg class="tile {{ extra_class | default('') }}" viewBox="0 0 120 120" role="img"
+     aria-label="Grafik for {{ product.set_name }}" focusable="false">
+  <defs>
+    <clipPath id="c-{{ product.key }}"><rect width="120" height="120" rx="12"/></clipPath>
+  </defs>
+  <g clip-path="url(#c-{{ product.key }})">
+    <rect width="120" height="120" fill="{{ art.dark }}"/>
+    <g transform="rotate({{ art.angle }} 60 60)">
+      <rect x="-60" y="{{ art.offset }}" width="240" height="{{ art.band }}" fill="{{ art.bright }}" opacity="0.95"/>
+      <rect x="-60" y="{{ art.offset + art.band * 2.2 }}" width="240" height="{{ art.band // 2 + 2 }}" fill="{{ art.bright }}" opacity="0.55"/>
+      <rect x="-60" y="{{ art.offset - art.band * 2.4 }}" width="240" height="{{ art.band // 3 + 1 }}" fill="#ffffff" opacity="0.22"/>
+    </g>
+    <circle cx="96" cy="26" r="13" fill="{{ art.bright }}" opacity="0.28"/>
+    <text x="14" y="98" fill="#ffffff" font-family="Cambria, Georgia, serif"
+          font-size="40" font-weight="700" opacity="0.94">{{ art.initials }}</text>
+  </g>
+</svg>

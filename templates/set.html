@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}{{ group.name }}: priser på forseglede produkter | PokeArb{% endblock %}
+{% block description %}Alle butikspriser på forseglede {{ group.name }}-produkter, omregnet til kroner.{% endblock %}
+
+{% block content %}
+<nav class="crumbs" aria-label="Brødkrummer">
+  <a href="{{ root }}index.html">Forside</a> <span aria-hidden="true">/</span> <span>{{ group.name }}</span>
+</nav>
+
+<h1>{{ group.name }}</h1>
+<p class="lede">
+  {% if group.release_date %}Udgivet {{ group.release_date | dk_date }}.{% endif %}
+  {{ group['products'] | length }} produkter, {{ group.offer_count }} priser.
+  {% if not group.matched %}
+  Sætnavnet kunne ikke matches mod den officielle TCGdex-liste, så det står
+  præcis som butikkerne skriver det.
+  {% endif %}
+</p>
+
+{% for product in group['products'] %}
+<section class="offer-block">
+  <h2>
+    <a href="{{ root }}produkt/{{ product.key }}.html">{{ product.product_type.label_da }}</a>
+    <span class="tag">{{ product.language.label_da }}</span>
+  </h2>
+  {% include "_offer_table.html" %}
+</section>
+{% endfor %}
+{% endblock %}

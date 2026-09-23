@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}PokeArb{% endblock %}</title>
+<meta name="description" content="{% block description %}PokeArb finder den billigste europæiske butik på forseglede Pokémon TCG-produkter og viser alle priser i kroner, med fragt til Danmark.{% endblock %}">
+<link rel="icon" href="{{ root }}assets/logo.svg" type="image/svg+xml">
+<link rel="stylesheet" href="{{ root }}assets/style.css">
+</head>
+<body>
+<a class="skip" href="#indhold">Spring til indhold</a>
+
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="{{ root }}index.html" aria-label="PokeArb forside">
+      <img src="{{ root }}assets/logo.svg" alt="" width="32" height="32" aria-hidden="true">
+      <span class="brand-name">Poke<span class="brand-accent">Arb</span></span>
+    </a>
+    <nav aria-label="Hovedmenu">
+      <ul class="nav">
+        <li><a href="{{ root }}index.html">Priser</a></li>
+        <li><a href="{{ root }}besparelser.html">Bedste køb</a></li>
+        <li><a href="{{ root }}liste.html">Min liste <span class="nav-count" id="nav-watch-count" hidden></span></a></li>
+        <li><a href="{{ root }}butikker.html">Butikker</a></li>
+        <li><a href="{{ root }}samling.html">Samling</a></li>
+        <li><a href="{{ root }}om.html">Om</a></li>
+      </ul>
+    </nav>
+    <button class="theme-toggle" type="button" id="theme-toggle" aria-label="Skift mellem lyst og mørkt tema">
+      <span aria-hidden="true">&#9681;</span>
+    </button>
+  </div>
+</header>
+
+<div class="shipping-bar">
+  <div class="wrap shipping-bar-inner">
+    <p class="shipping-note" role="note">
+      Priserne er <strong>i alt: vare plus fragt til Danmark</strong>. Told og
+      importgebyrer er ikke med.
+    </p>
+    <details class="ship-settings">
+      <summary>Fragtsatser</summary>
+      <div class="ship-grid">
+        <p class="muted ship-help">
+          Butikker der oplyser deres sats, får den brugt. Resten oplyser
+          den først ved checkout, så de tal herunder er PokeArbs antagelser.
+          Retter du dem, regnes alle priser om med det samme, og valget huskes
+          i din browser.
+        </p>
+        {% for code, amount in assumed_shipping | dictsort %}
+        <div class="field field-narrow">
+          <label for="ship-{{ code }}">{{ code }}</label>
+          <input type="number" id="ship-{{ code }}" data-ship-input="{{ code }}"
+                 min="0" step="5" value="{{ amount | round | int }}" inputmode="numeric">
+        </div>
+        {% endfor %}
+        <button class="btn-ghost" type="button" id="ship-reset">Nulstil</button>
+      </div>
+    </details>
+  </div>
+</div>
+
+<main id="indhold" class="wrap">
+{% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="wrap">
+    <p>
+      Opdateret {{ generated_at | dk_date }}.
+      Valutakurser fra {{ fx.as_of | dk_date }}{% if fx.stale %} (genbrugt, ECB svarede ikke ved seneste kørsel){% endif %}.
+    </p>
+    <p class="muted">
+      Kilde for valutakurser: Den Europæiske Centralbank. PokeArb omregner de
+      offentliggjorte referencekurser til kroner, hvilket er en bearbejdning af
+      ECB's data. Kurserne kan hentes gratis hos ECB.
+      Sætliste fra TCGdex.
+    </p>
+    <p class="muted">
+      PokeArb er et uafhængigt prissammenligningsprojekt. Det er hverken
+      produceret, støttet af eller tilknyttet Nintendo, Creatures, Game Freak
+      eller The Pokémon Company. Alle varemærker tilhører deres respektive ejere.
+    </p>
+  </div>
+</footer>
+
+<script src="{{ root }}assets/app.js" defer></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

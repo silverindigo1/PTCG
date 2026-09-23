@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Om PokeArb og kilderne{% endblock %}
+{% block description %}Hvilke butikker PokeArb henter priser fra, hvordan tilladelsen er tjekket, og hvad tallene ikke dækker.{% endblock %}
+
+{% block content %}
+<h1>Om PokeArb</h1>
+<p class="lede">
+  PokeArb henter en gang i døgnet priserne på forseglede Pokemon-produkter fra
+  et udvalg af europæiske butikker, omregner dem til kroner og viser den
+  billigste. Ikke andet.
+</p>
+
+<h2>Hvad tallene ikke dækker</h2>
+<ul class="prose-list">
+  <li><strong>Fragt.</strong> Med i "i alt"-prisen. Nogle butikker oplyser deres
+      sats, og den bruger vi. Resten oplyser den først ved checkout, så vi
+      regner med en antagelse, der er markeret "anslået" hver gang den bruges
+      og kan rettes i "Fragtsatser" øverst på siden.</li>
+  <li><strong>Told og importgebyrer.</strong> Handler du inden for EU, er der normalt
+      ingen told, men gebyrer kan alligevel forekomme. Ikke med her.</li>
+  <li><strong>Om butikken faktisk sender til Danmark.</strong> Det er tjekket hvor
+      butikken oplyser det. Butikker uden bekræftet levering er markeret nedenfor.</li>
+  <li><strong>Om varen er ægte og i god stand.</strong> PokeArb kender kun prisen.</li>
+</ul>
+
+<h2>Butikker</h2>
+<p class="muted">Hver butik har sin egen side med fragtregel og hvor tit den er billigst. <a href="butikker.html">Se alle butikker</a>.</p>
+<table class="offers">
+  <thead>
+    <tr>
+      <th scope="col">Butik</th><th scope="col">Land</th>
+      <th scope="col" class="num">Varer hentet</th><th scope="col">Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for shop in shops %}
+    <tr class="{% if shop.status != 'ok' %}is-out{% endif %}">
+      <th scope="row">
+        <a href="butik/{{ shop.shop }}.html">{{ shop.name }}</a>
+        {% if not shop.shipping_confirmed %}<span class="tag tag-warn">levering til DK ikke bekræftet</span>{% endif %}
+      </th>
+      <td>{{ shop.country }}</td>
+      <td class="num">{{ shop.count }}</td>
+      <td>
+        {% if shop.status == 'ok' %}<span class="stock-in">Opdateret {{ shop.captured_at | dk_date }}</span>
+        {% elif shop.status == 'stale' %}<span class="tag tag-warn">Svarede ikke, priser fra {{ shop.captured_at | dk_date }}</span>
+        {% else %}<span class="stock-out">Ingen data</span>{% endif %}
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<h2>Hvordan butikkerne er valgt</h2>
+<p>
+  En butik kommer kun med, hvis fire ting passer: dens robots.txt tillader de
+  sider vi henter, dens handelsbetingelser forbyder ikke automatiseret adgang,
+  den udstiller et maskinlæsbart katalog eller kan parses forsvarligt, og den
+  sender til Danmark. Hver kontrol er skrevet ned med dato og de præcise
+  adresser i filen <code>SOURCES.md</code> i projektets kildekode. Butikker der
+  forbyder crawling i deres betingelser, er holdt ude, også når deres
+  robots.txt tillader det.
+</p>
+<p>
+  Vi henter højst en side ad gangen pr. butik, med mindst to sekunders pause,
+  og vi respekterer HTTP 429 og Retry-After. Vi rører aldrig kurv, login eller
+  bestilling.
+</p>
+
+<h2>Markedspris og bedste køb</h2>
+<p>
+  Markedsprisen er medianen af de samlede priser hos alle butikker der har
+  varen på lager, og den beregnes kun når mindst tre butikker har den. Et
+  "godt køb" er en vare hvor den billigste ligger mindst 5 % under. Medianen
+  er valgt frem for gennemsnittet, fordi en enkelt butik med en skæv pris så
+  ikke flytter den.
+</p>
+<p>
+  "Min liste" regner den billigste fordeling af flere varer på tværs af
+  butikker, med én fragt pr. butik og fri fragt hvor butikken giver det. Med
+  få varer prøves alle kombinationer. Med mange bruges en lokal søgning, der
+  aldrig ender dyrere end at købe alt i én butik eller hver vare hvor den er
+  billigst.
+</p>
+
+<h2>Kilder</h2>
+<ul class="prose-list">
+  <li>Sætliste og udgivelsesdatoer: TCGdex.</li>
+  <li>Valutakurser: Den Europæiske Centralbanks daglige referencekurser.
+      Kurserne kan hentes gratis hos ECB. PokeArb omregner dem til kroner,
+      hvilket er en bearbejdning af ECB's data.</li>
+  <li>Priser: butikkerne selv, se tabellen ovenfor.</li>
+</ul>
+
+<h2>Kørselslog</h2>
+<p class="muted">
+  Seneste kørsel {{ generated_at | dk_date }}:
+  {{ stats.accepted | default(0) }} priser accepteret,
+  {{ stats.rejected | default(0) }} varer sorteret fra som tilbehør, enkeltkort
+  eller andet, {{ stats.unmatched_set | default(0) }} sætnavne uden match mod
+  den officielle liste.
+</p>
+{% endblock %}

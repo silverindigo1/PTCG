@@ -1,0 +1,360 @@
+{
+  "_note": [
+    "Two groups. 'recorded' titles were read from the shops' own live catalogue",
+    "feeds on 2026-09-22 and are quoted exactly, including the shop and the",
+    "endpoint they came from. 'constructed' titles are written by hand to cover",
+    "product types and languages the recorded sample happened not to contain.",
+    "Do not blur the two: only the recorded group is evidence about how shops",
+    "actually write titles."
+  ],
+  "recorded": [
+    {
+      "title": "Xerneas EX - Collection X (Secret Rare) [XY1x-063]",
+      "shop": "matraws",
+      "source": "https://matraws.dk/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "enkeltkort, ikke forseglet produkt"
+    },
+    {
+      "title": "Disney Lorcana – Hyperia City – Prerelease Event – 16. oktober",
+      "shop": "musenogslottet",
+      "source": "https://www.musenogslottet.dk/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "andet kortspil"
+    },
+    {
+      "title": "Ultra PRO: Pikachu Toploader & Penny Sleeves - Combo Pack - 25 stuks",
+      "shop": "debroergrot",
+      "source": "https://www.debroergrot.nl/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "tilbehoer. Butikken er udelukket, men titlen er stadig en gyldig prve"
+    },
+    {
+      "title": "Pokémon Mega Evolution: Pitch Black - Ultra PRO 9-Pocket Portfolio",
+      "shop": "tcgstore",
+      "source": "https://tcgstore.se/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "tilbehoer med et rigtigt saetnavn i titlen, den svaere slags"
+    },
+    {
+      "title": "Ampharos-EX 085/081 - Bandit Ring",
+      "shop": "poketalk",
+      "source": "https://www.poketalk.se/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "enkeltkort, kendes paa kortnummeret"
+    },
+    {
+      "title": "Premium Zipped 9-Pocket Binder - Svart",
+      "shop": "hobbykort",
+      "source": "https://hobbykort.se/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "tilbehoer"
+    },
+    {
+      "title": "30th Celebration Japanese Booster Box",
+      "shop": "tcgshoppers",
+      "source": "https://www.tcgshoppers.nl/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "accept",
+      "type": "booster_box",
+      "language": "ja",
+      "why": "display paa japansk, uden ordet Pokemon i titlen"
+    },
+    {
+      "title": "Naruto TCG - Naruto Night x New York Yankees – TCG Promo Chakra Card CP-001",
+      "shop": "tcgreus",
+      "source": "https://www.tcgreus.nl/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "andet kortspil"
+    },
+    {
+      "title": "Sneasel 25/111 30th Celebration: Classic Collection",
+      "shop": "pocketmonster",
+      "source": "https://pocketmonster.dk/wp-json/wc/store/v1/products?per_page=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "enkeltkort"
+    },
+    {
+      "title": "Topps Match Attax UCC 2026/27 Booster Box",
+      "shop": "tcgcompany",
+      "source": "https://tcgcompany.nl/wp-json/wc/store/v1/products?per_page=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "fodboldkort. Rammer 'booster box' men er ikke Pokemon"
+    },
+    {
+      "title": "Pokemon Terastal Gathering Coin Box Chinesisch ZUFÄLLIG",
+      "shop": "bulkparadise",
+      "source": "https://bulkparadise-tcg.de/wp-json/wc/store/v1/products?per_page=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "Pokemon, men ingen af de fem produkttyper"
+    },
+    {
+      "title": "Ultra Pro Pokemon Ringordner Sammelalbum",
+      "shop": "godofcards",
+      "source": "https://godofcards.com/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "reject",
+      "why": "tilbehoer paa tysk"
+    },
+    {
+      "title": "Pokémon TCG | Nihil Zero (M3) | Display (KOR)",
+      "shop": "tcgviert",
+      "source": "https://tcgviert.com/products.json?limit=2",
+      "captured": "2026-09-22",
+      "expect": "accept",
+      "type": "booster_box",
+      "language": "ko",
+      "why": "display paa koreansk, sprogkode i parentes"
+    },
+    {
+      "title": "Booster Heat Wave Arena sv9a Coreano | Caja sellada 30 sobres Pokémon TCG",
+      "shop": "tigercards",
+      "source": "https://www.tigercards.es/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "Spansk titel: 'Caja sellada 30 sobres' og 'Coreano'",
+      "type": "booster_box",
+      "language": "ko"
+    },
+    {
+      "title": "Caja 20 Sobres Pokémon 30th Anniversary - Chino",
+      "shop": "pokemillon",
+      "source": "https://www.pokemillon.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "Spansk: 'Caja 20 Sobres', sprog 'Chino'",
+      "type": "booster_box",
+      "language": "zh"
+    },
+    {
+      "title": "ETB Evoluciones de Paldea | Élite Paldea Evolved Pokémon Center - Inglés (Dañada)",
+      "shop": "pokemillon",
+      "source": "https://www.pokemillon.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "reject",
+      "why": "'(Dañada)' er spansk for beskadiget"
+    },
+    {
+      "title": "Pokémon Buio Pesto Box Display 36 Buste ITA",
+      "shop": "baruzcard",
+      "source": "https://baruzcard.it/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "italiensk display, 'ITA'",
+      "type": "booster_box",
+      "language": "it"
+    },
+    {
+      "title": "Pokémon 30° Anniversario – Bundle 6 Buste (IT)",
+      "shop": "baruzcard",
+      "source": "https://baruzcard.it/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "italiensk booster bundle",
+      "type": "booster_bundle",
+      "language": "it"
+    },
+    {
+      "title": "Pokémon Buio Pesto Bundle Box Display 36 Buste + Set Allenatore ITA",
+      "shop": "baruzcard",
+      "source": "https://baruzcard.it/products.json",
+      "captured": "2026-09-23",
+      "expect": "reject",
+      "why": "display plus Set Allenatore i samme vare"
+    },
+    {
+      "title": "Pokémon 30° Anniversario – Display Completo 10 Mini Tin (IT)",
+      "shop": "baruzcard",
+      "source": "https://baruzcard.it/products.json",
+      "captured": "2026-09-23",
+      "expect": "reject",
+      "why": "en display af mini tins, ikke en booster box"
+    },
+    {
+      "title": "[S-CHN] Pokémon Display - 30th Celebration (30thC)",
+      "shop": "yonko",
+      "source": "https://yonko-tcg.de/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "'[S-CHN]' er forenklet kinesisk",
+      "type": "booster_box",
+      "language": "zh"
+    },
+    {
+      "title": "[DE] Pokémon Top Trainer Box - 30 Jahre (MBE4)",
+      "shop": "yonko",
+      "source": "https://yonko-tcg.de/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "tysk Top-Trainer-Box",
+      "type": "etb",
+      "language": "de"
+    },
+    {
+      "title": "Pre-Order | Pokemon - Storm Emeralda Display (M6) (JP)",
+      "shop": "sealedcardzz",
+      "source": "https://sealedcardzz.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "japansk display med saetkode",
+      "type": "booster_box",
+      "language": "ja"
+    },
+    {
+      "title": "Inferno x Japansk Booster Box",
+      "shop": "mtgwebshop",
+      "source": "https://mtgwebshop.dk/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "saettet hedder 'Inferno X', bogstavet maa ikke forsvinde",
+      "type": "booster_box",
+      "language": "ja"
+    },
+    {
+      "title": "White Flare Booster Bundle Display",
+      "shop": "mtgwebshop",
+      "source": "https://mtgwebshop.dk/products.json",
+      "captured": "2026-09-23",
+      "expect": "reject",
+      "why": "en display af bundles er en kasse, ikke ét bundle"
+    },
+    {
+      "title": "Pokemon - Destined Rivals Elite Trainer Box ETB (EN) (with imperfection)",
+      "shop": "sealedcardzz",
+      "source": "https://sealedcardzz.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "reject",
+      "why": "'with imperfections' er en beskadiget aeske"
+    },
+    {
+      "title": "151 - Ultra Premium Collection",
+      "shop": "cardify",
+      "source": "https://cardifytcg.nl/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "UPC uden ordet Pokemon",
+      "type": "upc",
+      "language": "en"
+    },
+    {
+      "title": "Pokémon TCG: Shiny Treasure ex Booster Box - Alm. moms",
+      "shop": "rogerz",
+      "source": "https://rogerz.dk/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "why": "'Alm. moms' er en momsangivelse, ikke en del af saetnavnet",
+      "type": "booster_box",
+      "language": "en"
+    },
+    {
+      "title": "ETB Evoluciones de Paldea | Élite Paldea Evolved Pokémon Center - Inglés",
+      "shop": "pokemillon",
+      "source": "https://www.pokemillon.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "type": "etb_pc",
+      "language": "en",
+      "why": "det spanske 'de' er en praeposition; 'Inglés' er sprogmaerket"
+    },
+    {
+      "title": "Caja de Sobres Ninja Spinner M4 - Coreano",
+      "shop": "pokemillon",
+      "source": "https://www.pokemillon.com/products.json",
+      "captured": "2026-09-23",
+      "expect": "accept",
+      "type": "booster_box",
+      "language": "ko",
+      "why": "'Caja de Sobres' er en booster box; 'de' maa ikke laeses som tysk"
+    }
+  ],
+  "constructed": [
+    {
+      "title": "Pokémon TCG: Surging Sparks Elite Trainer Box",
+      "expect": "accept",
+      "type": "etb",
+      "language": "en"
+    },
+    {
+      "title": "Pokémon KP08 Rivalen am Abgrund Top-Trainer-Box (DE)",
+      "expect": "accept",
+      "type": "etb",
+      "language": "de"
+    },
+    {
+      "title": "Pokemon Prismatic Evolutions Pokemon Center Elite Trainer Box",
+      "expect": "accept",
+      "type": "etb_pc",
+      "language": "en"
+    },
+    {
+      "title": "Pokémon Journey Together Booster Bundle",
+      "expect": "accept",
+      "type": "booster_bundle",
+      "language": "en"
+    },
+    {
+      "title": "Pokémon TCG Terastal Festival Ultra Premium Collection",
+      "expect": "accept",
+      "type": "upc",
+      "language": "en"
+    },
+    {
+      "title": "Pokemon Destined Rivals Booster Display 36er (Deutsch)",
+      "expect": "accept",
+      "type": "booster_box",
+      "language": "de"
+    },
+    {
+      "title": "Pokémon Stellar Crown Elite Trainer Box - Japansk",
+      "expect": "accept",
+      "type": "etb",
+      "language": "ja"
+    },
+    {
+      "title": "Pokémon Twilight Masquerade Coffret Dresseur d'Elite (FR)",
+      "expect": "accept",
+      "type": "etb",
+      "language": "fr"
+    },
+    {
+      "title": "Pokemon Surging Sparks Elite Trainer Box - BESKADIGET ÆSKE",
+      "expect": "reject",
+      "why": "beskadiget"
+    },
+    {
+      "title": "Pokémon 151 Booster Box - TOM ÆSKE uden kort",
+      "expect": "reject",
+      "why": "tom aeske"
+    },
+    {
+      "title": "Pokemon Prismatic Evolutions Elite Trainer Box PSA 10 Graded",
+      "expect": "reject",
+      "why": "gradet"
+    },
+    {
+      "title": "Pokémon Surging Sparks Booster Box - Sealed Case of 6",
+      "expect": "reject",
+      "why": "kasse med flere bokse"
+    },
+    {
+      "title": "Acrylic Display Case for Pokemon Elite Trainer Box",
+      "expect": "reject",
+      "why": "akryl-tilbehoer"
+    },
+    {
+      "title": "Pokémon Journey Together Elite Trainer Box 6x bundle",
+      "expect": "reject",
+      "why": "flere enheder"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{# Price range for one product: every in-stock shop as a tick, the median as
+   the market line, the cheapest at the left end. Only drawn with three or
+   more in-stock shops, because a range of two says nothing about a market. #}
+{% set strip = price_strip(product) %}
+{% if strip %}
+<figure class="strip {{ strip_class | default('') }}">
+  <div class="strip-bar" role="img"
+       aria-label="Priser på lager fra {{ strip.lo | dkk }} til {{ strip.hi | dkk }}, markedspris {{ strip.market | dkk }}">
+    {% for t in strip.ticks %}<span class="strip-tick" style="left: {{ t }}%"></span>{% endfor %}
+    <span class="strip-market" style="left: {{ strip.market_pos }}%"></span>
+    <span class="strip-best" style="left: 0%"></span>
+  </div>
+  <figcaption class="strip-labels">
+    <span><span class="strip-key strip-key-best" aria-hidden="true"></span>billigst {{ strip.lo | dkk }}</span>
+    <span><span class="strip-key strip-key-market" aria-hidden="true"></span>marked {{ strip.market | dkk }}</span>
+    <span>dyrest {{ strip.hi | dkk }}</span>
+  </figcaption>
+</figure>
+{% endif %}
